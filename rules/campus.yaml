@@ -1,0 +1,262 @@
+ruleset: campus_general_v1
+name: 校级课题申报书（通用）
+description: '适用于校级科研课题申报书的形式审查规则集。 页数上限 20 页（干净样例 16 页，预留空间）， 正文字体宋体 12pt，管理费不超过 10%。
+
+  '
+rules:
+- id: C001
+  type: required_sections
+  description: 必填章节完整性
+  params:
+    sections:
+    - title: 立项依据|研究背景
+      min_words: 300
+    - title: 研究目标|研究内容
+      min_words: 200
+    - title: 研究方法|技术路线
+      min_words: 200
+    - title: 预期成果|创新点
+      min_words: 100
+    - title: 研究基础|工作条件
+      min_words: 100
+    - title: 研究计划|进度安排
+    - title: 经费预算|预算
+    - title: 参考文献
+  enabled: true
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: C002
+  type: section_order
+  severity: warning
+  description: 章节顺序
+  params:
+    expected_order:
+    - 立项依据
+    - 研究目标
+    - 研究方法
+    - 预期成果
+    - 研究基础
+    - 研究计划
+    - 经费预算
+    - 参考文献
+- id: C003
+  type: page_limit
+  description: 总页数限制 20 页
+  params:
+    max_pages: 20
+- id: C004
+  type: word_limit
+  severity: warning
+  description: 总字数限制
+  params:
+    max_words: 15000
+- id: C005
+  type: font_check
+  severity: warning
+  description: 正文字体字号检查
+  params:
+    body_font: 宋体
+    body_size: 12
+- id: C006
+  type: figure_table_numbering
+  severity: warning
+  description: 图表编号连续性
+- id: C007
+  type: budget_check
+  description: 预算表勾稽与占比
+  params:
+    max_ratio:
+      管理费: 0.1
+    total_field: 合计|总计
+- id: C008
+  type: date_check
+  severity: warning
+  description: 研究期限合法性
+  params:
+    expected_months: 24
+- id: C009
+  type: page_number_check
+  severity: info
+  description: 页码连续性
+- id: C010
+  type: attachment_checklist
+  severity: info
+  description: 附件清单检查
+  params:
+    expected:
+    - 伦理审查证明
+    - 合作协议
+    - 推荐意见
+- id: C011
+  type: signature_page
+  description: 签字盖章页
+  params:
+    keywords:
+    - 签字
+    - 盖章
+- id: C012
+  type: cross_field_consistency
+  severity: warning
+  description: 申报基本信息与经费字段一致性
+  params:
+    fields:
+    - name: 项目名称
+      aliases:
+      - 课题名称
+      normalize: text
+      pattern: '《(?P<value>[^》]{2,60})》'
+    - name: 项目负责人
+      aliases:
+      - 课题负责人
+      - 负责人
+      - 申请人
+      normalize: text
+    - name: 申报单位
+      aliases:
+      - 依托单位
+      - 所属单位
+      normalize: text
+    comparisons:
+    - left:
+        name: 预算总额
+        aliases:
+        - 项目预算
+        - 经费总额
+      right:
+        name: 经费合计
+        aliases:
+        - 预算合计
+        - 合计
+      normalize: number
+      tolerance: 0.01
+      suggestion: 请核对封面预算总额与预算表合计
+- id: C013
+  type: anonymity_check
+  description: LLM anonymity check
+  params:
+    cover_pages:
+    - 1
+- id: C014
+  type: title_content_match
+  severity: warning
+  description: LLM title content match check
+- id: C015
+  type: cross_consistency_semantic
+  description: LLM semantic consistency check
+- id: C016
+  type: reference_format
+  severity: warning
+  description: 参考文献格式确定性检查
+  params:
+    semantic_review: false
+- id: C017
+  type: required_fields
+  description: 封面与基本信息必填字段
+  params:
+    fields:
+    - name: 项目名称
+      aliases:
+      - 课题名称
+    - name: 研究期限
+      aliases:
+      - 项目期限
+      - 起止时间
+    - name: 申报单位
+      aliases:
+      - 依托单位
+      - 所属单位
+    - name: 项目负责人
+      aliases:
+      - 课题负责人
+      - 负责人
+      - 申请人
+    - name: 联系电话
+      aliases:
+      - 手机
+      - 手机号码
+    - name: 电子邮箱
+      aliases:
+      - 邮箱
+      - Email
+      - E-mail
+    - name: 填表日期
+      aliases:
+      - 申请日期
+- id: C018
+  type: field_format
+  severity: warning
+  description: 联系方式与日期格式
+  params:
+    fields:
+    - name: 联系电话
+      aliases:
+      - 手机
+      - 手机号码
+      format: cn_mobile
+    - name: 电子邮箱
+      aliases:
+      - 邮箱
+      - Email
+      - E-mail
+      format: email
+    - name: 填表日期
+      aliases:
+      - 申请日期
+      format: date
+- id: C019
+  type: heading_numbering
+  severity: warning
+  description: 标题层级、编号连续性与样式一致性
+  params:
+    skip_pages:
+    - 1
+    require_numbering: false
+    allow_mixed_styles: false
+    allowed_styles:
+      '1':
+      - chinese
+      - chapter
+      - arabic
+      '2':
+      - chinese_parenthesized
+      - arabic_parenthesized
+      - decimal
+      '3':
+      - decimal
+- id: C020
+  type: layout_check
+  severity: warning
+  description: 页面、边距、正文与标题基础版式
+  params:
+    page:
+      size: A4
+      orientation: portrait
+      tolerance_pt: 14
+    margins_mm:
+      left_min: 15
+      right_min: 15
+      top_min: 15
+      bottom_min: 15
+      exclude_pages:
+      - 1
+    body:
+      min_size: 9
+      max_size: 14
+      line_spacing_min_pt: 11
+      line_spacing_max_pt: 32
+    headings:
+      '1':
+        min_size: 12
+        max_size: 22
+        bold: true
+      '2':
+        min_size: 10
+        max_size: 20
+      '3':
+        min_size: 9
+        max_size: 18
+    max_issues: 20

@@ -1,0 +1,104 @@
+# 变量来源（compose 插值优先级）：shell 环境变量 > 项目根目录 .env（不读 backend/.env）。
+# 推荐 Copy-Item .env.docker.example .env 后编辑——模板内路径均为容器内绝对路径；
+# 用 .env.example（./uploads、../rules 等本机相对路径）会让数据落到容器可写层而非 review-data 卷。
+# 生产默认：不建演示账号、AI 外发关闭、强制首登改密；演示环境需在根目录 .env 显式覆盖
+# AUTH_CREATE_DEMO_USERS=true / AUTH_FORCE_DEMO_PASSWORD_CHANGE=false / AI_EGRESS_ENABLED=true。
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      # ── 应用标识 ─────────────────────────────────────
+      APP_NAME: "${APP_NAME:-AI 项目申报书智能形式审查系统}"
+      APP_VERSION: "${APP_VERSION:-1.4.0}"
+      APP_BUILD_ID: "${APP_BUILD_ID:-20260721-strict-approval}"
+      DEBUG: "${DEBUG:-false}"
+      LOG_FILE: "${LOG_FILE:-}"
+
+      # ── 数据与路径（容器内固定路径；/data 为 review-data 卷） ──
+      # 注意：容器内必须用绝对路径，宿主 .env 里的 ./uploads 不适用于容器。
+      DATABASE_URL: "${DATABASE_URL:-sqlite:////data/review.db}"
+      DATABASE_ECHO: "${DATABASE_ECHO:-false}"
+      RULES_DIR: "${RULES_DIR:-/app/rules}"
+      UPLOAD_DIR: "${UPLOAD_DIR:-/data/uploads}"
+      OUTPUT_DIR: "${OUTPUT_DIR:-/data/outputs}"
+
+      # ── 凭据（必须显式提供，未设置时 compose 直接拒绝启动） ──
+      ACCESS_TOKEN: ${ACCESS_TOKEN:?ACCESS_TOKEN must be set}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN must be set}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+
+      # ── 访问控制与账号初始化（R13 新增：生产安全默认） ──
+      AUTH_REQUIRED: "${AUTH_REQUIRED:-true}"
+      RATE_LIMIT_PER_MINUTE: "${RATE_LIMIT_PER_MINUTE:-120}"
+      LOGIN_USER_RATE_LIMIT_PER_MINUTE: "${LOGIN_USER_RATE_LIMIT_PER_MINUTE:-20}"
+      # false：空库时不创建源码可推导密码的演示账号（生产默认）
+      AUTH_CREATE_DEMO_USERS: "${AUTH_CREATE_DEMO_USERS:-false}"
+      # true：演示账号/初始超管首次登录必须改密
+      AUTH_FORCE_DEMO_PASSWORD_CHANGE: "${AUTH_FORCE_DEMO_PASSWORD_CHANGE:-true}"
+      AUTH_BOOTSTRAP_ADMIN_USERNAME: "${AUTH_BOOTSTRAP_ADMIN_USERNAME:-admin}"
+      # 空值 = 空库且未开演示账号时不创建任何账号（健康检查仍为 ok，但无法登录）。
+      # 首次部署务必显式传入随机密码；该账号首登强制改密。
+      AUTH_BOOTSTRAP_ADMIN_PASSWORD: "${AUTH_BOOTSTRAP_ADMIN_PASSWORD:-}"
+
+      # ── AI 外发总开关（R13 新增：生产默认关闭） ──
+      # false = 全局禁止把材料正文发送给外部模型，优先于前端勾选与 LLM_API_KEY。
+      AI_EGRESS_ENABLED: "${AI_EGRESS_ENABLED:-false}"
+
+      # ── LLM（OpenAI 兼容） ───────────────────────────
+      LLM_BASE_URL: "${LLM_BASE_URL:-https://api.moonshot.cn/v1}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_MODEL: "${LLM_MODEL:-kimi-k3}"
+      LLM_TIMEOUT: "${LLM_TIMEOUT:-60}"
+      LLM_CONNECT_TIMEOUT: "${LLM_CONNECT_TIMEOUT:-10}"
+      LLM_MAX_RETRIES: "${LLM_MAX_RETRIES:-1}"
+      LLM_MAX_CONCURRENCY: "${LLM_MAX_CONCURRENCY:-1}"
+      LLM_MAX_OUTPUT_TOKENS: "${LLM_MAX_OUTPUT_TOKENS:-2000}"
+      LLM_MAX_PROMPT_CHARS: "${LLM_MAX_PROMPT_CHARS:-16000}"
+      LLM_MAX_CALLS_PER_TASK: "${LLM_MAX_CALLS_PER_TASK:-8}"
+      LLM_TEMPERATURE: "${LLM_TEMPERATURE:-0}"
+
+      # ── 有界任务执行 ─────────────────────────────────
+      TASK_MAX_WORKERS: "${TASK_MAX_WORKERS:-2}"
+      TASK_QUEUE_CAPACITY: "${TASK_QUEUE_CAPACITY:-64}"
+      TASK_TIMEOUT_SECONDS: "${TASK_TIMEOUT_SECONDS:-900}"
+      RULE_TIMEOUT_SECONDS: "${RULE_TIMEOUT_SECONDS:-180}"
+      TASK_HEARTBEAT_TIMEOUT_SECONDS: "${TASK_HEARTBEAT_TIMEOUT_SECONDS:-180}"
+      DATA_RETENTION_DAYS: "${DATA_RETENTION_DAYS:-30}"
+
+      # ── 文件与解析 ───────────────────────────────────
+      MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-50}"
+      MIN_EXTRACTED_TEXT_CHARS: "${MIN_EXTRACTED_TEXT_CHARS:-80}"
+      SOFFICE_PATH: "${SOFFICE_PATH:-/usr/bin/soffice}"
+
+      # ── OCR（镜像内置 tesseract 中英文语言包） ──
+      OCR_ENABLED: "${OCR_ENABLED:-true}"
+      OCR_LANGUAGE: "${OCR_LANGUAGE:-chi_sim+eng}"
+      OCR_DPI: "${OCR_DPI:-150}"
+      OCR_MIN_PAGE_CHARS: "${OCR_MIN_PAGE_CHARS:-20}"
+      OCR_MAX_PAGES: "${OCR_MAX_PAGES:-30}"
+      # 空值 = 由 PyMuPDF 通过 `tesseract --list-langs` 自动探测语言目录；
+      # 需要覆盖时再填容器内绝对路径（如 /usr/share/tesseract-ocr/5/tessdata）。
+      TESSDATA_PREFIX: "${TESSDATA_PREFIX:-}"
+
+      # ── 中文报告字体 ──
+      # 该路径由 Dockerfile 构建期固化（wqy-microhei 的 TrueType 字体，0644，appuser 可读，
+      # 并以 appuser 身份用 reportlab 真实注册验证）。不要改指 fonts-noto-cjk 的
+      # NotoSansCJK-Regular.ttc：那是 CFF/OTTO 轮廓，reportlab 会抛
+      # "postscript outlines are not supported"。
+      REPORT_FONT_PATH: "${REPORT_FONT_PATH:-/usr/local/share/fonts/review/review-cjk.ttc}"
+    volumes:
+      - review-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  review-data:

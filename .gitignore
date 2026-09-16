@@ -1,0 +1,33 @@
+.pytest-tmp/
+pytest-tmp/
+backend/.pytest-runtime/
+backend/.pytest-basetemp/
+# Python 字节码与 pytest 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# IDE / 编辑器元数据
+.idea/
+.vscode/
+# 可重新生成的产物：评测报告、样本池临时模板与输出、迁移打包结果
+eval/results/
+eval/corpus/templates/
+eval/corpus/output/
+release/
+.venv/
+.tools/
+.lo-profile/
+.lo-smoke/
+# 真实密钥文件：backend/.env（本机运行）与根目录 .env（docker compose 插值变量）。
+# 只忽略 .env 本身，.env.example / .env.docker.example 模板必须保留在仓库里。
+.env
+backend/.env
+backend/uploads/
+backend/outputs/
+backend/server.*.log
+backend/review.db*
+.run/
+rules/.history/
+frontend/node_modules/
+frontend/dist/
+frontend/server.*.log

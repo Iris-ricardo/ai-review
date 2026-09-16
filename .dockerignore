@@ -1,0 +1,20 @@
+.git
+.gitignore
+.venv
+.tools
+.run
+**/__pycache__
+**/*.pyc
+# 不要把宿主密钥文件带进构建上下文
+.env
+backend/.env
+backend/review.db*
+backend/uploads
+backend/outputs
+backend/server.*.log
+backend/.pytest-tmp
+backend/.pytest-runtime
+frontend/node_modules
+frontend/dist
+eval/.eval-tmp
+rules/.history
