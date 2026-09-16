@@ -27,7 +27,7 @@
 - **规则**：20 类检查器，3 套规则集共 60 条规则（校级 / 大创 / 国自然），规则集用 YAML 描述，可在界面里增删改并回归验证
 - **确定性优先**：默认全程离线；只有显式打开外发开关，并且对具体任务单独确认之后，才把必要片段交给大模型做语义检查
 - **结论诚实**：AI 不可用、检查降级或存在必须人工确认的项时，结论返回 `incomplete`，不会给"通过"
-- **工程**：后端 482 项 pytest（样本池未生成时 478 passed / 4 skipped）、前端 27 项 vitest + 8 项 node 测试，每次推送都在 CI 上跑
+- **工程**：后端 485 项 pytest（样本池未生成时 481 passed / 4 skipped）、前端 27 项 vitest + 8 项 node 测试，每次推送都在 CI 上跑
 - **部署**：单实例单进程，Windows 一键脚本或 Docker Compose 两种方式，不需要 Redis / Celery / PostgreSQL
 
 ## 界面预览
@@ -93,7 +93,7 @@ http://127.0.0.1:8000/api/health      # status=ok 表示数据库、规则集与
 backend/server.runtime.log            # 5MB 滚动，保留 3 份
 ```
 
-`checks` 还会显示 LibreOffice、OCR、LLM 配置、访问控制、活动任务数和队列容量。LibreOffice/OCR 不可用不会把数字文本 PDF 误报成服务宕机，但会影响 DOCX 或扫描件能力。任务页显示阶段、当前规则和每条规则的耗时/状态；长时间无心跳可主动取消，后台看门狗也会把失去活动的任务标记为 `timed_out`。
+`checks` 还会显示 LibreOffice、OCR、LLM 配置、访问控制、活动任务数和队列容量。LibreOffice/OCR 不可用不会把数字文本 PDF 误报成服务宕机，但会影响 DOCX 或扫描件能力；缺少 LibreOffice 时，DOCX 材料的下载与审查会返回 **503 并附安装指引**（`choco install libreoffice-fresh`，或用 `SOFFICE_PATH` 指定 `soffice`），不会用笼统的 500 掩盖环境问题。任务页显示阶段、当前规则和每条规则的耗时/状态；长时间无心跳可主动取消，后台看门狗也会把失去活动的任务标记为 `timed_out`。
 
 另外三个字段用于确认“8000 端口上跑的是不是当前这份源码”：`build_id`、`instance_fingerprint`（项目路径指纹）、`source_fingerprint`（后端源码指纹）——启动脚本正是靠它们判断能否复用已在运行的进程；改了后端代码却没重启时，这里会与磁盘源码不一致。`report_font_available` 表示报告所需的中文字体能否注册成功。
 
@@ -306,7 +306,7 @@ SQLite 与进程内有界执行器组成一个诚实的单实例部署。不要�
 | Tesseract | 可选，未随项目提供 | 扫描件 OCR；缺失时系统会明确提示先做 OCR |
 | 磁盘 | 约 2 GB（含 `.tools`、`.venv`、`node_modules`） | 复制/打包时留意 |
 
-后端（全量测试：482 项全部通过；样本池未生成时会显示 `478 passed, 4 skipped`）：
+后端（全量测试：485 项全部通过；样本池未生成时会显示 `481 passed, 4 skipped`）：
 
 ```powershell
 cd backend
@@ -416,7 +416,7 @@ docker compose up --build -d
 | 提示找不到 Python 3.11+ | 安装 Python 3.11+，勾选加入 PATH，或安装 Python Launcher |
 | `pip install` 失败 | 检查网络，或切换可访问的 pip 镜像源后重跑 `setup_windows.ps1` |
 | 勾选 AI 后失败 | 检查 `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL`、密钥额度与网络；确认 `AI_EGRESS_ENABLED=true` |
-| DOCX 上传后转换失败 | 确认 `SOFFICE_PATH` 指向有效 `soffice.exe`；带 `.tools/LibreOffice` 的包首启会自动配置 |
+| DOCX 上传后转换失败 | 确认 `SOFFICE_PATH` 指向有效 `soffice.exe`；带 `.tools/LibreOffice` 的包首启会自动配置。接口返回 503「服务端未安装 LibreOffice」时按提示安装即可，PDF 材料不受影响 |
 | 提示 `Port 8000 is occupied` | 关闭占用程序，或先执行 `.\stop_project.ps1` |
 
 ## 排错

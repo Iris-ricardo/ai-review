@@ -16,7 +16,7 @@ from app.api.auth_routes import require_review_capability
 from app.core.config import get_settings
 from app.services import auth_service, review_store, rule_admin_store
 from app.services.parser import get_parser
-from app.services.parser.converter import convert_docx_to_pdf
+from app.services.parser.converter import LibreOfficeNotFound, convert_docx_to_pdf
 from app.services.rule_admin_store import RevisionConflict, RuleAdminError
 from app.services.rules.catalog import checker_catalog, rule_requires_ai, validate_ruleset
 from app.services.rules.engine import RuleEngine
@@ -446,6 +446,13 @@ async def test_managed_version(
 
     try:
         result = await run_in_threadpool(execute)
+    except LibreOfficeNotFound as exc:
+        raise HTTPException(
+            503,
+            "服务端未安装 LibreOffice，无法试跑 DOCX 样例（PDF 样例不受影响）。"
+            "Windows 可执行 choco install libreoffice-fresh，"
+            "或用 SOFFICE_PATH 指定 soffice 路径后重试。",
+        ) from exc
     except TaskDeadlineExceeded as exc:
         raise HTTPException(504, str(exc)) from exc
     return rule_admin_store.record_test_run(
