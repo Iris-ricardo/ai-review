@@ -1,5 +1,9 @@
 # AI 项目申报书智能形式审查系统
 
+[![CI](https://github.com/Iris-ricardo/ai-review/actions/workflows/ci.yml/badge.svg)](https://github.com/Iris-ricardo/ai-review/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](backend/requirements.txt)
+
 面向高校项目申报书的本地 Web 形式审查工具：PDF/DOCX 上传、确定性规则、可配置必填字段与字段格式、跨字段一致性、标题编号、页面版式、可选语义检查、原文定位、批注 PDF、审查报告和批量汇总。
 
 当前版本 `1.4.0`，构建标识 `20260721-strict-approval`。
@@ -11,6 +15,30 @@
 | 本 README | 启动、使用、配置、安全、开发测试、部署迁移、排错 |
 | [规则与权限.md](规则与权限.md) | 检查器覆盖矩阵与新增路线、本地用户角色与权限边界 |
 | [eval/README.md](eval/README.md) | 评测工具、合成样本池、指标口径与复现命令 |
+
+---
+
+## 项目简介
+
+高校和科研院所的申报书在送专家评审之前，要先过一遍**形式审查**：必填字段有没有漏、预算数字前后对不对得上、标题编号有没有跳号、篇幅页数有没有超、扫描件是不是缺页。这类检查量大、重复，纯靠人眼容易漏。
+
+本项目把它做成一个**本地部署的 Web 工具**：上传 PDF / DOCX → 规则引擎逐条检查 → 输出定位到原文的审查报告、可直接发给作者的批注 PDF、以及批量汇总表。
+
+- **规则**：20 类检查器，3 套规则集共 60 条规则（校级 / 大创 / 国自然），规则集用 YAML 描述，可在界面里增删改并回归验证
+- **确定性优先**：默认全程离线；只有显式打开外发开关，并且对具体任务单独确认之后，才把必要片段交给大模型做语义检查
+- **结论诚实**：AI 不可用、检查降级或存在必须人工确认的项时，结论返回 `incomplete`，不会给"通过"
+- **工程**：后端 482 项 pytest（样本池未生成时 478 passed / 4 skipped）、前端 27 项 vitest + 8 项 node 测试，每次推送都在 CI 上跑
+- **部署**：单实例单进程，Windows 一键脚本或 Docker Compose 两种方式，不需要 Redis / Celery / PostgreSQL
+
+## 产出样例
+
+审查报告由程序自己生成（reportlab + 嵌入中文 TrueType 字体），每条命中都带页码与原文片段：
+
+| 第 1 页：结论与命中的规则 | 第 2 页：逐条证据与原文定位 |
+|---|---|
+| ![审查报告第 1 页](docs/screenshots/audit-report-page-1.png) | ![审查报告第 2 页](docs/screenshots/audit-report-page-2.png) |
+
+批注 PDF、批量汇总 XLSX、合成样本池与三口径评测报告等其余产出物，见 [`eval/README.md`](eval/README.md)。
 
 ---
 

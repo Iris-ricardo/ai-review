@@ -1,0 +1,69 @@
+name: CI
+
+# 每次推送到 main、以及每个 PR 都跑一遍全量测试。
+# 后端在 windows-latest 上跑：本项目的解析/报告链路依赖 Windows 字体与 PowerShell 脚本，
+# 在 Windows 上跑才和真实部署环境一致（LibreOffice 缺失时相关用例自行跳过）。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend-tests
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: 安装后端依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: 运行 pytest（pytest.ini 已固定 basetemp 与 testpaths）
+        run: python -m pytest -q
+
+  frontend:
+    name: frontend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装前端依赖
+        run: npm ci
+
+      - name: 单元测试（vitest）
+        run: npm test
+
+      - name: 接口层测试（node --test）
+        run: npm run test:node
+
+      - name: 生产构建自检
+        run: npm run build
