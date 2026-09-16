@@ -1,0 +1,193 @@
+ruleset: nsfc_general_v1
+name: 国家自然科学基金申请书（通用）
+description: >
+  适用于国家自然科学基金（面上/青年/地区）申请书的形式审查。
+  参照 NSFC 2026 年度指南常见要求编写。
+rules:
+  - id: N001
+    type: required_sections
+    severity: error
+    description: 必填章节完整性
+    params:
+      sections:
+        - {title: "立项依据|研究意义", min_words: 800}
+        - {title: "研究内容|研究目标", min_words: 500}
+        - {title: "研究方案|技术路线", min_words: 500}
+        - {title: "可行性分析|研究基础|工作条件", min_words: 300}
+        - {title: "特色与创新|创新点", min_words: 200}
+        - {title: "年度研究计划|预期成果"}
+        - {title: "经费预算|资金预算"}
+
+  - id: N002
+    type: section_order
+    severity: warning
+    description: 章节顺序
+    params:
+      expected_order:
+        - "立项依据"
+        - "研究目标"
+        - "研究内容"
+        - "研究方案"
+        - "可行性分析"
+        - "特色与创新"
+        - "年度研究计划"
+        - "经费预算"
+
+  - id: N003
+    type: page_limit
+    severity: error
+    description: 正文页数限制（面上项目）
+    params:
+      max_pages: 40
+
+  - id: N004
+    type: word_limit
+    severity: warning
+    description: 立项依据字数上限
+    params:
+      section_limits:
+        "立项依据": 5000
+
+  - id: N005
+    type: font_check
+    severity: warning
+    description: 正文字体字号
+    params:
+      body_font: "宋体"
+      body_size: 12
+
+  - id: N006
+    type: figure_table_numbering
+    severity: warning
+    description: 图表编号连续性
+
+  - id: N007
+    type: budget_check
+    severity: error
+    description: 预算勾稽与间接费用上限
+    params:
+      max_ratio: {"管理费": 0.10, "间接费用": 0.30}
+      total_field: "合计|总计"
+
+  - id: N008
+    type: date_check
+    severity: warning
+    description: 研究期限合法性
+    params:
+      expected_months: 48
+
+  - id: N009
+    type: page_number_check
+    severity: info
+    description: 页码连续性
+
+  - id: N010
+    type: attachment_checklist
+    severity: info
+    description: 附件清单检查
+    params:
+      expected:
+        - "伦理审查"
+        - "合作协议"
+        - "推荐信"
+
+  - id: N011
+    type: signature_page
+    severity: error
+    description: 签字盖章页
+    params:
+      keywords: ["签字", "盖章", "承诺"]
+
+  - id: N012
+    type: cross_field_consistency
+    severity: warning
+    description: 申请题目、申请人、单位、代码与经费字段一致性
+    params:
+      fields:
+        - name: "项目名称"
+          aliases: ["申请题目", "课题名称"]
+          normalize: "text"
+          validation_pattern: ".{10,}"  # 项目名称至少10字符
+        - {name: "申请人", aliases: ["项目负责人", "负责人"], normalize: "text"}
+        - {name: "依托单位", aliases: ["申报单位", "所在单位"], normalize: "text"}
+        - {name: "申请代码", aliases: ["申请代码1", "申请代码2"], normalize: "casefold"}
+      comparisons:
+        - left: {name: "预算总额", aliases: ["直接费用", "经费总额"]}
+          right: {name: "经费合计", aliases: ["预算合计", "合计"]}
+          normalize: "number"
+          tolerance: 0.01
+
+
+  - id: N013
+    type: anonymity_check
+    severity: error
+    description: LLM anonymity check
+    params:
+      cover_pages: [1]
+
+  - id: N014
+    type: title_content_match
+    severity: warning
+    description: LLM title content match check
+
+  - id: N015
+    type: cross_consistency_semantic
+    severity: error
+    description: LLM semantic consistency check
+
+  - id: N016
+    type: reference_format
+    severity: warning
+    description: 参考文献格式确定性检查
+    params:
+      semantic_review: false
+
+  - id: N017
+    type: required_fields
+    severity: error
+    description: 申请基本信息必填字段
+    params:
+      fields:
+        - {name: "项目名称", aliases: ["申请题目", "课题名称"]}
+        - {name: "申请人", aliases: ["项目负责人", "负责人"]}
+        - {name: "依托单位", aliases: ["申报单位", "所在单位"]}
+        - {name: "申请代码", aliases: ["申请代码1", "申请代码2"]}
+
+  - id: N018
+    type: field_format
+    severity: warning
+    description: 联系方式与日期格式
+    params:
+      fields:
+        - {name: "联系电话", aliases: ["手机", "移动电话", "电话"], format: "phone"}
+        - {name: "电子邮箱", aliases: ["邮箱", "Email", "E-mail"], format: "email"}
+        - {name: "填表日期", aliases: ["申请日期"], format: "date"}
+
+  - id: N019
+    type: heading_numbering
+    severity: warning
+    description: 标题层级、编号连续性与样式一致性
+    params:
+      skip_pages: [1]
+      require_numbering: false
+      allow_mixed_styles: false
+      allowed_styles:
+        "1": ["chinese", "chapter", "arabic"]
+        "2": ["chinese_parenthesized", "arabic_parenthesized", "decimal"]
+        "3": ["decimal"]
+
+  - id: N020
+    type: layout_check
+    severity: warning
+    description: 页面、边距、正文与标题基础版式
+    params:
+      page: {size: "A4", orientation: "portrait", tolerance_pt: 14}
+      margins_mm:
+        {left_min: 15, right_min: 15, top_min: 15, bottom_min: 15, exclude_pages: [1]}
+      body:
+        {min_size: 9, max_size: 14, line_spacing_min_pt: 11, line_spacing_max_pt: 32}
+      headings:
+        "1": {min_size: 12, max_size: 22, bold: true}
+        "2": {min_size: 10, max_size: 20}
+        "3": {min_size: 9, max_size: 18}
+      max_issues: 20

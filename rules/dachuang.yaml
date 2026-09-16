@@ -1,0 +1,268 @@
+ruleset: dachuang_2026_v1
+name: 大学生创新创业训练计划申报书
+description: '适用于大学生创新创业训练计划项目申报书的形式审查。 要求简短、重点突出，总页数一般不超过 8 页。
+
+  '
+rules:
+- id: D001
+  type: required_sections
+  description: 必填章节完整性
+  params:
+    sections:
+    - title: 立项依据|研究背景
+      min_words: 200
+    - title: 研究内容|研究方案
+      min_words: 200
+    - title: 创新点|项目特色
+      min_words: 100
+    - title: 进度安排|时间安排
+    - title: 经费预算|预算
+    - title: 预期成果
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: D002
+  type: section_order
+  severity: warning
+  description: 章节顺序
+  params:
+    expected_order:
+    - 立项依据
+    - 研究内容
+    - 创新点
+    - 进度安排
+    - 经费预算
+    - 预期成果
+- id: D003
+  type: page_limit
+  description: 总页数限制 8 页
+  params:
+    max_pages: 8
+    section_limits: {}
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: D004
+  type: word_limit
+  severity: warning
+  description: 总字数限制
+  params:
+    max_words: 6000
+- id: D005
+  type: font_check
+  severity: warning
+  description: 正文字体字号
+  params:
+    body_font: 宋体
+    body_size: 12
+- id: D006
+  type: figure_table_numbering
+  severity: warning
+  description: 图表编号连续性
+- id: D007
+  type: budget_check
+  description: 预算勾稽验证
+  params:
+    max_ratio: {}
+    total_field: 合计|总计
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: D008
+  type: date_check
+  severity: warning
+  description: 研究期限合法性
+  params:
+    expected_months: 12
+- id: D009
+  type: page_number_check
+  severity: info
+  description: 页码连续性
+- id: D010
+  type: attachment_checklist
+  severity: info
+  description: 附件清单检查
+  params:
+    expected:
+    - 指导教师意见
+    - 学院推荐意见
+- id: D011
+  type: signature_page
+  severity: info
+  description: 签字盖章页
+  params:
+    keywords:
+    - 指导教师
+    - 签字
+    - 学院盖章
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: D012
+  type: cross_field_consistency
+  severity: warning
+  description: 项目、负责人、学院与经费字段一致性
+  params:
+    fields:
+    - name: 项目名称
+      aliases:
+      - 课题名称
+      normalize: text
+      validation_pattern: .{8,}
+    - name: 项目负责人
+      aliases:
+      - 学生负责人
+      - 负责人
+      normalize: text
+    - name: 所属学院
+      aliases:
+      - 申报学院
+      - 学院
+      normalize: text
+    - name: 指导教师
+      aliases:
+      - 指导老师
+      normalize: text
+    comparisons:
+    - left:
+        name: 预算总额
+        aliases:
+        - 项目预算
+        - 经费总额
+      right:
+        name: 经费合计
+        aliases:
+        - 预算合计
+        - 合计
+      normalize: number
+      tolerance: 0.01
+- id: D013
+  type: anonymity_check
+  description: LLM anonymity check
+  params:
+    cover_pages:
+    - 1
+- id: D014
+  type: title_content_match
+  severity: warning
+  description: LLM title content match check
+- id: D015
+  type: cross_consistency_semantic
+  description: LLM semantic consistency check
+- id: D016
+  type: reference_format
+  severity: warning
+  description: 参考文献格式确定性检查
+  params:
+    semantic_review: false
+- id: D017
+  type: required_fields
+  description: 项目基本信息必填字段
+  params:
+    fields:
+    - name: 项目名称
+      aliases:
+      - 课题名称
+    - name: 项目负责人
+      aliases:
+      - 学生负责人
+      - 负责人
+    - name: 指导教师
+      aliases:
+      - 指导老师
+    - name: 所属学院
+      aliases:
+      - 申报学院
+      - 学院
+- id: D018
+  type: field_format
+  severity: warning
+  description: 联系方式与日期格式
+  params:
+    fields:
+    - name: 联系电话
+      aliases:
+      - 手机
+      - 手机号码
+      format: cn_mobile
+    - name: 电子邮箱
+      aliases:
+      - 邮箱
+      - Email
+      - E-mail
+      format: email
+    - name: 填表日期
+      aliases:
+      - 申请日期
+      format: date
+  basis:
+    document: ''
+    version: ''
+    clause: ''
+    excerpt: ''
+    url: ''
+- id: D019
+  type: heading_numbering
+  severity: warning
+  description: 标题层级、编号连续性与样式一致性
+  params:
+    skip_pages:
+    - 1
+    require_numbering: false
+    allow_mixed_styles: false
+    allowed_styles:
+      '1':
+      - chinese
+      - chapter
+      - arabic
+      '2':
+      - chinese_parenthesized
+      - arabic_parenthesized
+      - decimal
+      '3':
+      - decimal
+- id: D020
+  type: layout_check
+  severity: warning
+  description: 页面、边距、正文与标题基础版式
+  params:
+    page:
+      size: A4
+      orientation: portrait
+      tolerance_pt: 14
+    margins_mm:
+      left_min: 15
+      right_min: 15
+      top_min: 15
+      bottom_min: 15
+      exclude_pages:
+      - 1
+    body:
+      min_size: 9
+      max_size: 14
+      line_spacing_min_pt: 11
+      line_spacing_max_pt: 32
+    headings:
+      '1':
+        min_size: 12
+        max_size: 22
+        bold: true
+      '2':
+        min_size: 10
+        max_size: 20
+      '3':
+        min_size: 9
+        max_size: 18
+    max_issues: 20
