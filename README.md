@@ -30,15 +30,31 @@
 - **工程**：后端 482 项 pytest（样本池未生成时 478 passed / 4 skipped）、前端 27 项 vitest + 8 项 node 测试，每次推送都在 CI 上跑
 - **部署**：单实例单进程，Windows 一键脚本或 Docker Compose 两种方式，不需要 Redis / Celery / PostgreSQL
 
+## 界面预览
+
+| 登录（部署级访问凭据 + 账号） | 仪表盘：任务概览与快捷入口 |
+|---|---|
+| ![登录](docs/screenshots/ui-01-login.png) | ![仪表盘](docs/screenshots/ui-02-dashboard.png) |
+
+| 发起审查：选规则集 + 上传材料 | 结果页：结论、命中统计与问题列表 |
+|---|---|
+| ![发起审查](docs/screenshots/ui-03-new-review.png) | ![结果页](docs/screenshots/ui-04-result-conclusion.png) |
+
+| 结果页：点开命中看原文定位 | 规则集管理：20 类检查器逐个开关 |
+|---|---|
+| ![原文定位](docs/screenshots/ui-05-result-evidence.png) | ![规则集管理](docs/screenshots/ui-06-rulesets.png) |
+
+用户与角色管理（RBAC）、批量审查与批量汇总导出另有截图：`docs/screenshots/ui-07-users.png`、`docs/screenshots/ui-08-batch.png`。
+
 ## 产出样例
 
-审查报告由程序自己生成（reportlab + 嵌入中文 TrueType 字体），每条命中都带页码与原文片段：
+审查报告与批注 PDF 都由程序自己生成（reportlab 嵌入中文 TrueType 字体；批注用 PDF 原生高亮标注，在 PDF 阅读器里悬停即可看到批注内容）：
 
-| 第 1 页：结论与命中的规则 | 第 2 页：逐条证据与原文定位 |
-|---|---|
-| ![审查报告第 1 页](docs/screenshots/audit-report-page-1.png) | ![审查报告第 2 页](docs/screenshots/audit-report-page-2.png) |
+| 审查报告第 1 页：结论 | 第 2 页：逐条证据与原文定位 | 批注 PDF：预算勾稽错误高亮 |
+|---|---|---|
+| ![审查报告第 1 页](docs/screenshots/audit-report-page-1.png) | ![审查报告第 2 页](docs/screenshots/audit-report-page-2.png) | ![批注 PDF](docs/screenshots/annotated-budget-highlight.png) |
 
-批注 PDF、批量汇总 XLSX、合成样本池与三口径评测报告等其余产出物，见 [`eval/README.md`](eval/README.md)。
+批量汇总 XLSX、合成样本池与三口径评测报告等其余产出物，见 [`eval/README.md`](eval/README.md)。
 
 ---
 
