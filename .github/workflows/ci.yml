@@ -36,6 +36,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      # GitHub 的 Windows Server 镜像默认不含中日韩字体，而报告生成必须先注册一个
+      # TrueType 中文字体（backend/app/services/report/reporter.py: register_chinese_font）。
+      # 缺字体时 registry 会抛 RuntimeError，整个审查任务失败——本地有微软雅黑所以看不出来，
+      # 这里显式装一个开源字体（文泉驿微米黑，TrueType 轮廓，reportlab 可用）并指给 REPORT_FONT_PATH。
+      - name: 安装中文字体（runner 镜像默认没有）
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'cjk-font'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $font = Join-Path $dir 'wqy-microhei.ttc'
+          $urls = @(
+            'https://cdn.jsdelivr.net/gh/anthonyfok/fonts-wqy-microhei@master/wqy-microhei.ttc',
+            'https://raw.githubusercontent.com/anthonyfok/fonts-wqy-microhei/master/wqy-microhei.ttc'
+          )
+          foreach ($u in $urls) {
+            try {
+              Invoke-WebRequest -Uri $u -OutFile $font -TimeoutSec 120
+              if ((Test-Path $font) -and (Get-Item $font).Length -gt 1MB) { Write-Host "downloaded: $u"; break }
+            } catch { Write-Host "failed: $u -> $($_.Exception.Message)" }
+          }
+          if (-not (Test-Path $font) -or (Get-Item $font).Length -lt 1MB) { throw '中文字体下载失败，报告链路无法测试' }
+          "REPORT_FONT_PATH=$font" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          $env:REPORT_FONT_PATH = $font
+          python -c "from app.services.report.reporter import register_chinese_font; print('CJK font registered as:', register_chinese_font())"
+
       - name: 运行 pytest（pytest.ini 已固定 basetemp 与 testpaths）
         shell: pwsh
         run: |
