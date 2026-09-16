@@ -37,7 +37,25 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: 运行 pytest（pytest.ini 已固定 basetemp 与 testpaths）
-        run: python -m pytest -q
+        shell: pwsh
+        run: |
+          python -m pytest -q 2>&1 | Tee-Object -FilePath pytest.log
+          exit $LASTEXITCODE
+
+      # 失败时把失败用例名提成注解（GitHub 会在仓库页面直接显示），
+      # 并写进 Job Summary，避免只能翻几千行原始日志。
+      - name: 汇总失败用例
+        if: failure()
+        shell: pwsh
+        run: |
+          $fails = @()
+          if (Test-Path pytest.log) {
+            $fails = Get-Content pytest.log | Select-String -Pattern '^(FAILED|ERROR) ' | Select-Object -First 20
+          }
+          foreach ($f in $fails) { Write-Host "::error::$($f.Line)" }
+          if ($fails.Count -eq 0) { Write-Host "::error::pytest 失败，但日志里没有 FAILED/ERROR 行（可能是收集中断或超时）" }
+          "### 后端测试失败用例" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+          foreach ($f in $fails) { "- ``$($f.Line)``" | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY }
 
   frontend:
     name: frontend-tests
