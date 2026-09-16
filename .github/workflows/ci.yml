@@ -61,11 +61,25 @@ jobs:
           $env:REPORT_FONT_PATH = $font
           python -c "from app.services.report.reporter import register_chinese_font; print('CJK font registered as:', register_chinese_font())"
 
+      # DOCX 审查链路是 DOCX → LibreOffice → PDFParser（services/parser/docx_parser.py 顶部说明），
+      # runner 镜像不带 LibreOffice，缺了它所有 DOCX 端到端用例都会失败（表现为 500 与 KeyError）。
+      - name: 安装 LibreOffice（DOCX 审查必需）
+        shell: pwsh
+        run: |
+          choco install libreoffice-fresh -y --no-progress --limit-output
+          $soffice = 'C:\Program Files\LibreOffice\program\soffice.exe'
+          if (-not (Test-Path $soffice)) { throw "LibreOffice 安装后仍未找到 $soffice" }
+          "SOFFICE_PATH=$soffice" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          & $soffice --version
+
       - name: 运行 pytest（pytest.ini 已固定 basetemp 与 testpaths）
         shell: pwsh
         run: |
           python -m pytest -q 2>&1 | Tee-Object -FilePath pytest.log
-          exit $LASTEXITCODE
+          $code = $LASTEXITCODE
+          $summary = (Get-Content pytest.log | Select-String -Pattern 'passed|failed|error' | Select-Object -Last 1).Line
+          if ($summary) { Write-Host "::notice::pytest 结果：$($summary.Trim())" }
+          exit $code
 
       # 失败时把失败用例名提成注解（GitHub 会在仓库页面直接显示），
       # 并写进 Job Summary，避免只能翻几千行原始日志。
@@ -75,7 +89,9 @@ jobs:
         run: |
           $fails = @()
           if (Test-Path pytest.log) {
-            $fails = Get-Content pytest.log | Select-String -Pattern '^(FAILED|ERROR) ' | Select-Object -First 20
+            # 每条 check run 能展示的注解数量有限（约 10 条），所以只提前 8 条，
+            # 完整列表写进 Job Summary。
+            $fails = Get-Content pytest.log | Select-String -Pattern '^(FAILED|ERROR) ' | Select-Object -First 8
           }
           foreach ($f in $fails) { Write-Host "::error::$($f.Line)" }
           if ($fails.Count -eq 0) { Write-Host "::error::pytest 失败，但日志里没有 FAILED/ERROR 行（可能是收集中断或超时）" }

@@ -18,6 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from app.main import app
 from app.api import routes
 from app.core.config import get_settings
+from app.services.parser.converter import _find_libreoffice
 
 # 鈹€鈹€ Paths 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 EVAL_DIR = PROJECT_ROOT / "eval"
@@ -29,6 +30,16 @@ pytestmark = pytest.mark.skipif(
 )
 
 client = TestClient(app)
+
+# DOCX 审查链路是 DOCX → LibreOffice → PDFParser（见 services/parser/docx_parser.py 顶部说明），
+# 没有 LibreOffice 时 convert_docx_to_pdf() 抛 RuntimeError，整个审查任务失败，
+# 表现出来是接口 500 与 KeyError: 'issues'——容易被误读成代码缺陷。
+# 这里显式跳过并写明原因；CI 会安装 LibreOffice，因此这些用例在 CI 上是真的在跑。
+LIBREOFFICE_AVAILABLE = _find_libreoffice() is not None
+needs_libreoffice = pytest.mark.skipif(
+    not LIBREOFFICE_AVAILABLE,
+    reason="DOCX 审查需要 LibreOffice 做 DOCX→PDF 转换；CI 会安装，开发机请自行安装",
+)
 
 LLM_FALLBACK_CHECKERS = {
     "anonymity_check",
@@ -89,6 +100,7 @@ def _issues(rev_id: str) -> dict:
 
 
 # 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲
+@needs_libreoffice
 class TestE2EClean:
     """Clean sample has no errors but cannot fully pass without AI/manual checks."""
 
@@ -142,6 +154,7 @@ class TestE2EClean:
 
 
 # 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲
+@needs_libreoffice
 class TestE2ESabotage:
     """Sabotaged budget must trigger a budget_check error with page+bbox."""
 
