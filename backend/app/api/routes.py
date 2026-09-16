@@ -47,7 +47,7 @@ from app.services.llm.client import (
 )
 from app.services.llm.guideline import extract_draft_from_pdf
 from app.services.parser import cached_ir_is_current, get_parser, parser_fingerprint
-from app.services.parser.converter import convert_docx_to_pdf
+from app.services.parser.converter import LibreOfficeNotFound, convert_docx_to_pdf
 from app.services.report.annotator import generate_annotated_pdf
 from app.services.report.reporter import generate_review_report
 from app.services.rules.base_checker import list_registered_checker_types
@@ -550,6 +550,14 @@ def download_document_file(document_id: str, user: dict = Depends(local_or_curre
     document = _require_owned(_get_document(document_id), user, "Document")
     try:
         pdf_path = _document_pdf(document)
+    except LibreOfficeNotFound as exc:
+        # 缺依赖是环境问题、不是文档问题：给 503 + 可操作提示，而不是笼统 500
+        raise HTTPException(
+            503,
+            "服务端未安装 LibreOffice，无法把 DOCX 转成 PDF（PDF 材料不受影响）。"
+            "Windows 可执行 choco install libreoffice-fresh；"
+            "已安装但仍找不到时，用 SOFFICE_PATH 指定 soffice 可执行文件路径。",
+        ) from exc
     except Exception as exc:
         raise HTTPException(500, f"Conversion failed: {exc}") from exc
     return FileResponse(
@@ -1023,6 +1031,22 @@ def _execute_review(review_id: str, document_id: str, ruleset_id: str) -> None:
             progress=100,
             current_rule=None,
             error_message=str(exc),
+            completed_at=review_store.now(),
+        )
+    except LibreOfficeNotFound as exc:
+        # 任务失败原因写清楚，界面上直接能看到“装什么、怎么装”
+        logger.warning("Review %s failed: LibreOffice not available", review_id)
+        _finalize_review(
+            review_id,
+            "failed",
+            stage="failed",
+            progress=100,
+            current_rule=None,
+            error_message=(
+                "服务端未安装 LibreOffice，无法审查 DOCX 材料（PDF 材料不受影响）。"
+                "Windows 可执行 choco install libreoffice-fresh，"
+                "或用 SOFFICE_PATH 指定 soffice 路径后重试。"
+            ),
             completed_at=review_store.now(),
         )
     except Exception as exc:

@@ -24,10 +24,19 @@ _profiles_lock = threading.Lock()
 CONVERSION_TIMEOUT = 60
 
 
+class LibreOfficeNotFound(RuntimeError):
+    """服务端缺少 LibreOffice（DOCX→PDF 转换依赖）。
+
+    单独定义类型，是为了让上层能区分“环境缺依赖”（可操作：装 LibreOffice）
+    与“转换本身失败”（可能是文档损坏），而不是一律返回笼统的 500。
+    """
+
+
 def convert_docx_to_pdf(docx_path: str | Path) -> Path:
     """Convert a DOCX file to PDF via LibreOffice headless; returns the PDF path
-    next to the source. Raises FileNotFoundError (missing input), RuntimeError
-    (LibreOffice missing or conversion failed) or subprocess.TimeoutExpired.
+    next to the source. Raises FileNotFoundError (missing input),
+    LibreOfficeNotFound (LibreOffice missing), RuntimeError (conversion failed)
+    or subprocess.TimeoutExpired.
     """
     docx_path = Path(docx_path).resolve()
     if not docx_path.exists():
@@ -39,7 +48,7 @@ def convert_docx_to_pdf(docx_path: str | Path) -> Path:
     # Find LibreOffice executable
     soffice = _find_libreoffice()
     if soffice is None:
-        raise RuntimeError(
+        raise LibreOfficeNotFound(
             "LibreOffice not found. Install it with:\n"
             "  Ubuntu/Debian: sudo apt-get install libreoffice\n"
             "  macOS:          brew install libreoffice\n"
